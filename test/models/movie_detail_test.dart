@@ -1,4 +1,4 @@
-﻿import 'package:douban_movie/models/movie.dart';
+import 'package:douban_movie/models/movie.dart';
 import 'package:douban_movie/models/movie_detail.dart';
 import 'package:flutter_test/flutter_test.dart';
 

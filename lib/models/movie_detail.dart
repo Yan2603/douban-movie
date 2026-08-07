@@ -1,4 +1,4 @@
-﻿import 'package:douban_movie/models/movie.dart';
+import 'package:douban_movie/models/movie.dart';
 
 class MovieDetail {
   final int id;

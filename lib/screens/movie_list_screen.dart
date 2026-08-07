@@ -13,7 +13,7 @@ class MovieListScreen extends StatefulWidget {
 }
 
 class _MovieListScreenState extends State<MovieListScreen> {
-  bool _loading = false;
+  bool _loading = true;
   String? _error;
   List<Movie> _movies = const [];
 

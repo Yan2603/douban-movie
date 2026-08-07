@@ -21,7 +21,7 @@ class MovieDetailScreen extends StatefulWidget {
 }
 
 class _MovieDetailScreenState extends State<MovieDetailScreen> {
-  bool _loading = false;
+  bool _loading = true;
   String? _error;
   MovieDetail? _detail;
 

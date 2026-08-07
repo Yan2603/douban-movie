@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:douban_movie/config/tmdb_config.dart';
@@ -139,6 +140,25 @@ void main() {
             (e) => e.toString(),
             'message',
             contains('404'),
+          ),
+        ),
+      );
+    });
+    test('request timeout throws Exception with Chinese message', () async {
+      final client = MockClient((_) => Completer<http.Response>().future);
+      final repo = MovieRepository(
+        client: client,
+        apiKey: 'k',
+        requestTimeout: const Duration(milliseconds: 50),
+      );
+
+      await expectLater(
+        repo.fetchNowPlaying(),
+        throwsA(
+          isA<Exception>().having(
+            (e) => e.toString(),
+            'message',
+            contains('请求超时，请重试'),
           ),
         ),
       );

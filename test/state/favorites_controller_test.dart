@@ -52,5 +52,48 @@ void main() {
       await controller2.load();
       expect(controller2.isFavorite(550), isFalse);
     });
+
+    test('toggle rethrows and rolls back when save fails on add', () async {
+      final store = _ThrowingOnSaveFavoritesStore();
+      final controller = FavoritesController(store);
+      await controller.load();
+      expect(controller.isFavorite(550), isFalse);
+
+      await expectLater(
+        controller.toggle(sample),
+        throwsA(isA<StateError>()),
+      );
+      expect(controller.isFavorite(550), isFalse);
+      expect(controller.items, isEmpty);
+    });
+
+    test('toggle rethrows and rolls back when save fails on remove', () async {
+      final store = _ThrowingOnSaveFavoritesStore(initial: [sample]);
+      final controller = FavoritesController(store);
+      await controller.load();
+      expect(controller.isFavorite(550), isTrue);
+
+      await expectLater(
+        controller.toggle(sample),
+        throwsA(isA<StateError>()),
+      );
+      expect(controller.isFavorite(550), isTrue);
+      expect(controller.items, [sample]);
+    });
   });
+}
+
+class _ThrowingOnSaveFavoritesStore extends FavoritesStore {
+  _ThrowingOnSaveFavoritesStore({List<Movie> initial = const []})
+      : _initial = List<Movie>.from(initial);
+
+  final List<Movie> _initial;
+
+  @override
+  Future<List<Movie>> load() async => List<Movie>.from(_initial);
+
+  @override
+  Future<void> save(List<Movie> movies) async {
+    throw StateError('Failed to persist favorites');
+  }
 }

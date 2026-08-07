@@ -1,51 +1,51 @@
-# Douban-Style Movie Client (Flutter) — Design
+# 豆瓣风格电影客户端（Flutter）— 设计说明
 
-Date: 2026-08-07  
-Status: Approved for planning  
-Project path: `C:\Users\28939\douban-movie` (new app; does not modify `flutter-demo`)
+日期：2026-08-07  
+状态：已确认，待写实现计划  
+工程路径：`C:\Users\28939\douban-movie`（新项目；不改动 `flutter-demo`）
 
-## Goal
+## 目标
 
-Build a Douban-inspired movie client in Flutter that:
+用 Flutter 做一个豆瓣风格的电影客户端：
 
-- Fetches movies from **TMDB** (public, documented API; Douban’s official movie API is not usable)
-- Shows a **Now Playing** list and a **detail** page
-- Manages **favorites** with **Provider**, persisted locally across app restarts
+- 数据来自 **TMDB**（公开、有文档；豆瓣官方电影 API 已不可用）
+- 提供 **正在热映列表** 与 **详情页**
+- 用 **Provider** 管理收藏，并 **本地持久化**（杀进程再开仍在）
 
-Visual tone is Douban-like (green accent, poster grid), not a pixel-perfect clone. No login, reviews, cast pages, search, or multi-chart tabs in v1.
+视觉偏豆瓣（绿色强调色、海报网格），不做像素级复刻。v1 不做登录、短评、影人页、搜索、多榜单 Tab。
 
-## Decisions (locked)
+## 已锁定决策
 
-| Topic | Choice |
-|-------|--------|
-| Data source | TMDB (`/movie/now_playing`, `/movie/{id}`) |
-| Relationship to Todo demo | New sibling project; leave `flutter-demo` untouched |
-| MVP scope | List → detail → favorites (with Favorites tab) |
-| Favorites | Provider + SharedPreferences persistence |
-| Architecture | Mirror Todo layering (models / repositories / state / screens / widgets) |
-| Default list | TMDB Now Playing (“正在热映” analogue) |
-| API language / region | `language=zh-CN`; Now Playing `region=CN` when supported |
-| Poster images | TMDB image CDN, e.g. `https://image.tmdb.org/t/p/w500{poster_path}` |
-| API key | `--dart-define=TMDB_API_KEY=...` (never commit secrets) |
+| 主题 | 选择 |
+|------|------|
+| 数据源 | TMDB（`/movie/now_playing`、`/movie/{id}`） |
+| 与 Todo 练手项目关系 | 同级新工程；不动 `flutter-demo` |
+| MVP 范围 | 列表 → 详情 → 收藏（含收藏 Tab） |
+| 收藏 | Provider + SharedPreferences 持久化 |
+| 架构 | 镜像 Todo 分层（models / repositories / state / screens / widgets） |
+| 默认列表 | TMDB Now Playing（对应「正在热映」） |
+| 语言 / 地区 | `language=zh-CN`；Now Playing 使用 `region=CN`（若接口支持） |
+| 海报图 | TMDB CDN，例如 `https://image.tmdb.org/t/p/w500{poster_path}` |
+| API Key | `--dart-define=TMDB_API_KEY=...`（密钥不进仓库） |
 
-## Architecture
+## 架构
 
 ```
 lib/
   main.dart
   app.dart                 # MaterialApp + MultiProvider
-  config/tmdb_config.dart  # baseUrl, image base, API key from environment
+  config/tmdb_config.dart  # baseUrl、图片 base、从环境读取 API key
   models/
-    movie.dart             # list-item summary
-    movie_detail.dart      # detail fields
+    movie.dart             # 列表项摘要
+    movie_detail.dart      # 详情字段
   repositories/
-    movie_repository.dart  # TMDB HTTP (list + detail)
+    movie_repository.dart  # TMDB HTTP（列表 + 详情）
   state/
     favorites_controller.dart
   storage/
     favorites_store.dart   # SharedPreferences
   screens/
-    home_shell.dart        # bottom tabs: Now Playing | Favorites
+    home_shell.dart        # 底部 Tab：热映 | 收藏
     movie_list_screen.dart
     movie_detail_screen.dart
     favorites_screen.dart
@@ -54,88 +54,88 @@ lib/
     favorite_button.dart
 ```
 
-### Unit responsibilities
+### 单元职责
 
-| Unit | Responsibility | Depends on |
-|------|----------------|------------|
-| `MovieRepository` | Fetch Now Playing / detail; parse JSON | `http` + TMDB key |
-| `FavoritesStore` | Read/write favorites JSON | `shared_preferences` |
-| `FavoritesController` | Add/remove/query favorites; notify UI | `FavoritesStore` |
-| Screens | Render UI; trigger load & navigation | Repository / Controller |
+| 单元 | 职责 | 依赖 |
+|------|------|------|
+| `MovieRepository` | 拉取热映 / 详情，解析 JSON | `http` + TMDB key |
+| `FavoritesStore` | 读写本地收藏 JSON | `shared_preferences` |
+| `FavoritesController` | 增删查收藏，通知 UI | `FavoritesStore` |
+| Screens | 展示 UI，触发加载与导航 | Repository / Controller |
 
-List/detail loading state (`loading` / `data` / `error`) lives in the **screen** for MVP (no separate list controller). Favorites are the only cross-screen shared state via Provider.
+列表 / 详情的 `loading` / `data` / `error` 由 **页面本地状态** 管理（MVP 不做独立 ListController）。跨页共享状态只有收藏（Provider）。
 
-## Data flow
+## 数据流
 
-### List
+### 列表
 
-1. `MovieListScreen` calls `MovieRepository.fetchNowPlaying()` on enter (and on pull-to-refresh).
-2. Local screen state: `loading` / `movies` / `error`.
-3. Tap card → `Navigator.push` to detail with `movieId` (optional summary for placeholder).
+1. `MovieListScreen` 进入时（以及下拉刷新）调用 `MovieRepository.fetchNowPlaying()`。
+2. 页面本地状态：`loading` / `movies` / `error`。
+3. 点击卡片 → `Navigator.push` 进详情，传入 `movieId`（可选带摘要做占位）。
 
-### Detail
+### 详情
 
-1. Load via `MovieRepository.fetchDetail(id)`.
-2. Show poster, title, rating, release date, overview.
-3. Favorite control reads/writes `FavoritesController`. On favorite, persist a **summary** (`Movie`) so the Favorites tab can render offline without re-fetching.
+1. 通过 `MovieRepository.fetchDetail(id)` 加载。
+2. 展示海报、标题、评分、上映日、简介。
+3. 收藏控件读写 `FavoritesController`。收藏时写入 **摘要**（`Movie`），收藏 Tab 无需再请求即可展示。
 
-### Favorites
+### 收藏
 
-- In-memory: `Map<int, Movie>` (keyed by TMDB id) inside `FavoritesController` (`ChangeNotifier`).
-- Disk: `FavoritesStore` serializes entries to JSON in SharedPreferences.
-- Startup: load store → hydrate controller → then `runApp` (or block first frame until load completes).
-- List cards, detail button, and Favorites tab all watch the same controller so star state stays consistent.
+- 内存：`FavoritesController`（`ChangeNotifier`）内用 `Map<int, Movie>`（以 TMDB id 为键）。
+- 磁盘：`FavoritesStore` 将条目序列化为 JSON，存入 SharedPreferences。
+- 启动：先 `load` 再 hydrate Controller，然后再 `runApp`（或挡住首帧直到加载完成）。
+- 列表卡、详情按钮、收藏 Tab 都监听同一 Controller，星标状态保持一致。
 
-### Favorites tab
+### 收藏 Tab
 
-- Renders controller entries with the same poster card widget.
-- Empty state: short copy (“还没有收藏”).
-- Unfavorite removes immediately and writes store.
+- 用同一套海报卡片渲染 Controller 中的条目。
+- 空态文案：「还没有收藏」。
+- 取消收藏立即从列表移除并写回 Store。
 
-**Success criteria:** kill and relaunch app → favorites remain; star state matches across list, detail, and Favorites tab.
+**成功标准：** 杀进程再开，收藏仍在；列表 / 详情 / 收藏三处星标一致。
 
 ## UI
 
-- Primary color: Douban green ≈ `#00B51D`; light gray background; white cards.
-- Now Playing: two-column poster grid; card shows poster, title, TMDB vote average.
-- Detail: large poster (or backdrop) + title + rating + release date + overview; favorite control in app bar / toolbar.
-- Favorites tab: same grid; empty state copy.
-- Bottom navigation: 热映 | 收藏.
-- Pull-to-refresh on Now Playing; images via `cached_network_image` with gray placeholder on failure.
+- 主色：豆瓣绿约 `#00B51D`；浅灰背景、白卡片。
+- 热映：双列海报网格；卡片含海报、标题、TMDB 评分。
+- 详情：大海报（或 backdrop）+ 标题 + 评分 + 上映日 + 简介；AppBar / 工具栏收藏星标。
+- 收藏 Tab：同款网格；空态文案。
+- 底部导航：热映 | 收藏。
+- 热映支持下拉刷新；图片用 `cached_network_image`，失败时灰色占位。
 
-### Out of scope (v1)
+### v1 不做
 
-Login, short reviews, person pages, search, Top Rated / Upcoming tabs, accounts, sharing.
+登录、短评、影人页、搜索、Top / 即将上映等榜单 Tab、账号、分享。
 
-## Error handling
+## 错误处理
 
-- Network failure, timeout, non-2xx: show error message + Retry on list and detail.
-- Missing API key: explicit message on startup or first request (never silent empty list).
-- Missing/failed poster URL: gray placeholder.
-- Favorites write failure: roll back in-memory change or show SnackBar so UI and disk do not diverge.
-- Detail loading: centered progress (or light skeleton); if summary is already available, favorite control may be enabled before detail finishes.
+- 网络失败、超时、非 2xx：列表 / 详情展示错误文案 +「重试」。
+- 未配置 API key：启动或首次请求时明确提示（禁止静默空列表）。
+- 海报 URL 为空或加载失败：灰色占位。
+- 收藏写盘失败：回滚内存变更或 SnackBar 提示，避免 UI 与磁盘不一致。
+- 详情加载中：居中 Progress（或轻量骨架）；若已有摘要，可先允许操作收藏。
 
-## Testing
+## 测试
 
-- Unit: `FavoritesController` toggle / dedupe / load-save with mocked store.
-- Smoke: `Movie` / `MovieDetail` JSON parsing from fixed fixtures.
-- No golden screenshots; no device E2E in MVP.
+- 单元：`FavoritesController` 的 toggle / 去重 / load-save（Store 可 mock）。
+- Smoke：`Movie` / `MovieDetail` 用固定 fixture 做 JSON 解析。
+- MVP 不做黄金截图与真机 E2E。
 
-## Dependencies (planned)
+## 计划依赖
 
 - `provider`
 - `http`
 - `shared_preferences`
 - `cached_network_image`
 
-## Runbook (README will document)
+## 运行说明（写入 README）
 
-1. Create a TMDB API key at https://www.themoviedb.org/
-2. `flutter pub get`
+1. 在 https://www.themoviedb.org/ 申请 TMDB API key  
+2. `flutter pub get`  
 3. `flutter run --dart-define=TMDB_API_KEY=<key>`
 
-## Non-goals
+## 非目标
 
-- Replacing or coupling to `flutter-demo` Todo code
-- Using unofficial Douban scrapers/proxies
-- Production-grade offline movie cache beyond favorite summaries
+- 替换或耦合 `flutter-demo` 的 Todo 代码  
+- 使用非官方豆瓣爬虫 / 代理  
+- 除收藏摘要外的完整离线片库缓存  

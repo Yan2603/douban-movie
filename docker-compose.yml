@@ -1,5 +1,6 @@
 services:
   web:
+    image: ghcr.io/${GHCR_IMAGE}:${IMAGE_TAG:-latest}
     build:
       context: .
       dockerfile: Dockerfile

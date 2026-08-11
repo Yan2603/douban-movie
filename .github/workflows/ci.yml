@@ -32,9 +32,6 @@ jobs:
     name: Docker build
     needs: test
     runs-on: ubuntu-latest
-    env:
-      # GitHub Actions: official Hub images; server compose defaults to daocloud
-      NGINX_IMAGE: nginx:alpine
     steps:
       - uses: actions/checkout@v4
 

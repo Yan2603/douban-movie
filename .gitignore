@@ -12,6 +12,9 @@
 .swiftpm/
 migrate_working_dir/
 
+# Superpowers SDD process artifacts
+.superpowers/
+
 # IntelliJ related
 *.iml
 *.ipr

@@ -1,4 +1,5 @@
-FROM ghcr.io/cirruslabs/flutter:stable AS builder
+# cirruslabs/flutter stopped updating May 2026; community drop-in continues tags.
+FROM ghcr.io/adrianjagielak/flutter:3.44.9 AS builder
 WORKDIR /app
 
 ARG TMDB_API_KEY

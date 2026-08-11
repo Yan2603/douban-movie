@@ -1,5 +1,3 @@
-# syntax=docker/dockerfile:1
-
 FROM ghcr.io/cirruslabs/flutter:stable AS builder
 WORKDIR /app
 
@@ -15,7 +13,9 @@ RUN flutter config --enable-web \
       --base-href=/movie/ \
       --dart-define=TMDB_API_KEY=${TMDB_API_KEY}
 
-FROM nginx:alpine
+# Default daocloud mirror (same as interview); CI can override via NGINX_IMAGE build-arg
+ARG NGINX_IMAGE=docker.m.daocloud.io/library/nginx:alpine
+FROM ${NGINX_IMAGE}
 COPY nginx.conf /etc/nginx/nginx.conf
 COPY --from=builder /app/build/web /usr/share/nginx/html/movie
 EXPOSE 80

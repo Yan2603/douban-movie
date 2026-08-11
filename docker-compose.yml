@@ -1,0 +1,17 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        TMDB_API_KEY: ${TMDB_API_KEY}
+    container_name: douban-web
+    restart: unless-stopped
+    expose:
+      - "80"
+    networks:
+      - edge-net
+
+networks:
+  edge-net:
+    external: true

@@ -15,6 +15,9 @@ migrate_working_dir/
 # Superpowers SDD process artifacts
 .superpowers/
 
+# Local secrets (TMDB / deploy)
+.env
+
 # IntelliJ related
 *.iml
 *.ipr

@@ -1,18 +1,59 @@
 services:
+  postgres:
+    image: docker.m.daocloud.io/library/postgres:16-alpine
+    environment:
+      POSTGRES_USER: douban
+      POSTGRES_PASSWORD: douban
+      POSTGRES_DB: douban_movie
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U douban -d douban_movie"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks: [edge-net]
+    # 生产不映射宿主端口；本地冒烟可临时加 ports: ["5432:5432"]
+
+  api:
+    image: ghcr.io/${GHCR_IMAGE}/api:${IMAGE_TAG:-latest}
+    build:
+      context: .
+      dockerfile: Dockerfile.app
+    environment:
+      DATABASE_URL: postgres://douban:douban@postgres:5432/douban_movie
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
+      JWT_ACCESS_TTL: ${JWT_ACCESS_TTL:-15m}
+      JWT_REFRESH_TTL: ${JWT_REFRESH_TTL:-7d}
+      TMDB_API_KEY: ${TMDB_API_KEY}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-*}
+      TYPEORM_SYNC: "true"
+      PORT: 3000
+      NODE_ENV: production
+    depends_on:
+      postgres:
+        condition: service_healthy
+    expose: ["3000"]
+    # 本地冒烟可临时加 ports: ["3000:3000"]
+    networks: [edge-net]
+    container_name: douban-api
+    restart: unless-stopped
+
   web:
-    image: ghcr.io/${GHCR_IMAGE}:${IMAGE_TAG:-latest}
+    image: ghcr.io/${GHCR_IMAGE}/web:${IMAGE_TAG:-latest}
     build:
       context: .
       dockerfile: Dockerfile
       args:
-        TMDB_API_KEY: ${TMDB_API_KEY}
+        API_BASE_URL: ${API_BASE_URL:-/movie-api/api}
     container_name: douban-web
     restart: unless-stopped
-    expose:
-      - "80"
-    networks:
-      - edge-net
+    expose: ["80"]
+    networks: [edge-net]
 
 networks:
   edge-net:
     external: true
+
+volumes:
+  pgdata:

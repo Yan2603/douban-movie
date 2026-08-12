@@ -16,3 +16,24 @@
 ### Verification
 - lutter test: 15 passed, 0 failed.
 
+
+## Whole-branch review fixes (2026-08-12)
+
+### Changes
+- CI: Postgres service + DATABASE_URL/JWT_*/TMDB_API_KEY; removed continue-on-error on server tests
+- AuthService: JWT_ACCESS_TTL/JWT_REFRESH_TTL fall back to 15m/7d; JWT_ACCESS_SECRET still required
+- LoginScreen: removed unused _formKey / Form wrapper
+- AuthRepository: HTTP 400 -> 请求参数无效，请检查用户名和密码
+- TYPEORM_SYNC policy unchanged (MVP debt)
+
+### Commands + results
+```
+cd apps/server
+# DATABASE_URL=postgres://douban:douban@localhost:5433/douban_movie (+ JWT_* + TMDB_API_KEY=dummy)
+npm test
+# → 3 suites, 15 passed
+
+cd apps/client
+flutter test --dart-define=API_BASE_URL=http://127.0.0.1:9/api
+# → 23 passed
+```

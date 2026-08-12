@@ -15,8 +15,16 @@ migrate_working_dir/
 # Superpowers SDD process artifacts
 .superpowers/
 
+# Local git worktrees
+.worktrees/
+
 # Local secrets (TMDB / deploy)
 .env
+
+# Nest / Node
+node_modules/
+apps/server/dist/
+apps/server/coverage/
 
 # IntelliJ related
 *.iml

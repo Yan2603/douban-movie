@@ -18,6 +18,20 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: douban
+          POSTGRES_PASSWORD: douban
+          POSTGRES_DB: douban_movie
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U douban -d douban_movie"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4
 
@@ -28,15 +42,47 @@ jobs:
           cache: true
 
       - name: Pub get
+        working-directory: apps/client
         run: flutter pub get
 
-      - name: Test
-        run: flutter test --dart-define=TMDB_API_KEY=dummy_ci_key
+      - name: Test client
+        working-directory: apps/client
+        run: flutter test --dart-define=API_BASE_URL=http://127.0.0.1:9/api
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: apps/server/package-lock.json
+
+      - name: Install server deps
+        working-directory: apps/server
+        run: npm ci
+
+      - name: Test server
+        working-directory: apps/server
+        env:
+          DATABASE_URL: postgres://douban:douban@localhost:5432/douban_movie
+          JWT_ACCESS_SECRET: ci-test-secret
+          JWT_ACCESS_TTL: 15m
+          JWT_REFRESH_TTL: 7d
+          TMDB_API_KEY: dummy
+        run: npm test
 
   docker:
     name: Docker build
     needs: test
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - name: web
+            file: Dockerfile
+            build_args: |
+              API_BASE_URL=/movie-api/api
+          - name: api
+            file: Dockerfile.app
+            build_args: ''
     steps:
       - uses: actions/checkout@v4
 
@@ -58,12 +104,12 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
+          file: ${{ matrix.file }}
           push: ${{ github.event_name != 'pull_request' }}
           tags: |
-            ghcr.io/${{ steps.image.outputs.name }}:latest
-            ghcr.io/${{ steps.image.outputs.name }}:${{ github.sha }}
-          build-args: |
-            TMDB_API_KEY=${{ github.event_name == 'pull_request' && 'dummy_ci_key' || secrets.TMDB_API_KEY }}
+            ghcr.io/${{ steps.image.outputs.name }}/${{ matrix.name }}:latest
+            ghcr.io/${{ steps.image.outputs.name }}/${{ matrix.name }}:${{ github.sha }}
+          build-args: ${{ matrix.build_args }}
 
   deploy:
     name: Deploy to server
@@ -101,6 +147,7 @@ jobs:
               echo "$GHCR_TOKEN" | docker login ghcr.io -u "${GHCR_IMAGE%%/*}" --password-stdin
             fi
             export GHCR_IMAGE IMAGE_TAG
-            docker compose pull web
+            docker network create edge-net || true
+            docker compose pull
             docker compose up -d
             docker image prune -f

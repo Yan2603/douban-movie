@@ -68,6 +68,49 @@ export class AuthService {
     return this.issueTokens(user);
   }
 
+  async refresh(rawRefreshToken: string): Promise<AuthTokens> {
+    const record = await this.findValidRefresh(rawRefreshToken);
+    if (!record) {
+      throw new UnauthorizedException();
+    }
+
+    record.revokedAt = new Date();
+    await this.refreshTokens.save(record);
+
+    const user = await this.users.findOne({ where: { id: record.userId } });
+    if (!user) {
+      throw new UnauthorizedException();
+    }
+    return this.issueTokens(user);
+  }
+
+  async logout(rawRefreshToken: string): Promise<{ ok: true }> {
+    const tokenHash = hashRefresh(rawRefreshToken);
+    const record = await this.refreshTokens.findOne({ where: { tokenHash } });
+    if (record && !record.revokedAt) {
+      record.revokedAt = new Date();
+      await this.refreshTokens.save(record);
+    }
+    return { ok: true };
+  }
+
+  private async findValidRefresh(
+    rawRefreshToken: string,
+  ): Promise<RefreshToken | null> {
+    const tokenHash = hashRefresh(rawRefreshToken);
+    const record = await this.refreshTokens.findOne({ where: { tokenHash } });
+    if (!record) {
+      return null;
+    }
+    if (record.revokedAt) {
+      return null;
+    }
+    if (record.expiresAt.getTime() <= Date.now()) {
+      return null;
+    }
+    return record;
+  }
+
   private async issueTokens(user: User): Promise<AuthTokens> {
     const accessSecret = this.requireConfig('JWT_ACCESS_SECRET');
     const accessTtl = this.requireConfig('JWT_ACCESS_TTL');
@@ -82,7 +125,7 @@ export class AuthService {
     );
 
     const rawRefresh = randomBytes(32).toString('hex');
-    const tokenHash = createHash('sha256').update(rawRefresh).digest('hex');
+    const tokenHash = hashRefresh(rawRefresh);
     const expiresAt = addTtl(new Date(), refreshTtl);
 
     await this.refreshTokens.save(
@@ -104,6 +147,10 @@ export class AuthService {
     }
     return value;
   }
+}
+
+function hashRefresh(raw: string): string {
+  return createHash('sha256').update(raw).digest('hex');
 }
 
 function addTtl(from: Date, ttl: string): Date {

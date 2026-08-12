@@ -69,4 +69,27 @@ describe('AuthService', () => {
       service.login({ username, password: 'wrongpass' }),
     ).rejects.toBeInstanceOf(UnauthorizedException);
   });
+
+  it('refresh rotates token and rejects old refresh', async () => {
+    const first = await service.register({
+      username: `bob_${Date.now()}`,
+      password: 'secret1',
+    });
+    const second = await service.refresh(first.refreshToken);
+    await expect(service.refresh(first.refreshToken)).rejects.toBeInstanceOf(
+      UnauthorizedException,
+    );
+    expect(second.accessToken).toBeDefined();
+  });
+
+  it('logout revokes refresh', async () => {
+    const tokens = await service.register({
+      username: `carol_logout_${Date.now()}`,
+      password: 'secret1',
+    });
+    await service.logout(tokens.refreshToken);
+    await expect(service.refresh(tokens.refreshToken)).rejects.toBeInstanceOf(
+      UnauthorizedException,
+    );
+  });
 });

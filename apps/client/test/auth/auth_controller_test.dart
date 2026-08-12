@@ -125,5 +125,63 @@ void main() {
       expect(results, [newAccess, newAccess, newAccess]);
       expect(await store.readRefreshToken(), 'refresh-2');
     });
+    test('ensureFreshAccessToken skips refresh when access still valid',
+        () async {
+      var refreshCalls = 0;
+      SharedPreferences.setMockInitialValues({
+        AuthStore.accessTokenKey: _validAccessToken(),
+        AuthStore.refreshTokenKey: 'refresh-1',
+      });
+
+      final client = MockClient((request) async {
+        refreshCalls++;
+        return jsonUtf8Response({
+          'accessToken': _validAccessToken(),
+          'refreshToken': 'refresh-2',
+        }, 200);
+      });
+
+      final store = AuthStore();
+      final auth = AuthController(AuthRepository(client: client), store);
+      await auth.restore();
+
+      final token = await auth.ensureFreshAccessToken();
+
+      expect(token, _validAccessToken());
+      expect(refreshCalls, 0);
+    });
+
+    test('forceRefreshAccessToken always hits /auth/refresh when refresh exists',
+        () async {
+      var refreshCalls = 0;
+      SharedPreferences.setMockInitialValues({
+        AuthStore.accessTokenKey: _validAccessToken(),
+        AuthStore.refreshTokenKey: 'refresh-1',
+      });
+
+      final newAccess = _validAccessToken();
+      final client = MockClient((request) async {
+        expect(request.url.path, endsWith('/auth/refresh'));
+        refreshCalls++;
+        return jsonUtf8Response({
+          'accessToken': newAccess,
+          'refreshToken': 'refresh-2',
+        }, 200);
+      });
+
+      final store = AuthStore();
+      final auth = AuthController(AuthRepository(client: client), store);
+      await auth.restore();
+
+      // Access looks valid — ensureFresh would skip; force must still refresh.
+      expect(await auth.ensureFreshAccessToken(), _validAccessToken());
+      expect(refreshCalls, 0);
+
+      final forced = await auth.forceRefreshAccessToken();
+
+      expect(forced, newAccess);
+      expect(refreshCalls, 1);
+      expect(await store.readRefreshToken(), 'refresh-2');
+    });
   });
 }

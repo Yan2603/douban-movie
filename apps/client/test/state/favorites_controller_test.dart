@@ -94,15 +94,44 @@ class _UnauthThenSucceedRepository extends FavoritesRepository {
       _inner.remove(accessToken, tmdbId);
 }
 
-Future<AuthController> _loggedInAuth() async {
+Future<AuthController> _loggedInAuth({http.Client? client}) async {
   SharedPreferences.setMockInitialValues({
     AuthStore.accessTokenKey: _validAccessToken(),
     AuthStore.refreshTokenKey: 'refresh-abc',
   });
   final auth = AuthController(
     AuthRepository(
-      client: MockClient((_) async => jsonUtf8Response({}, 500)),
+      client: client ??
+          MockClient((_) async => jsonUtf8Response({}, 500)),
     ),
+    AuthStore(),
+  );
+  await auth.restore();
+  return auth;
+}
+
+/// Tracks whether [forceRefreshAccessToken] was used (vs soft ensureFresh).
+class _TrackingAuthController extends AuthController {
+  _TrackingAuthController(super.repo, super.store);
+
+  int forceRefreshCalls = 0;
+
+  @override
+  Future<String?> forceRefreshAccessToken() async {
+    forceRefreshCalls++;
+    return super.forceRefreshAccessToken();
+  }
+}
+
+Future<_TrackingAuthController> _loggedInTrackingAuth({
+  required http.Client client,
+}) async {
+  SharedPreferences.setMockInitialValues({
+    AuthStore.accessTokenKey: _validAccessToken(),
+    AuthStore.refreshTokenKey: 'refresh-abc',
+  });
+  final auth = _TrackingAuthController(
+    AuthRepository(client: client),
     AuthStore(),
   );
   await auth.restore();
@@ -204,8 +233,18 @@ void main() {
       expect(controller.items, [sample]);
     });
 
-    test('UNAUTHENTICATED on add retries once then succeeds', () async {
-      final auth = await _loggedInAuth();
+    test('UNAUTHENTICATED on add force-refreshes then succeeds', () async {
+      var refreshCalls = 0;
+      final newAccess = _validAccessToken();
+      final client = MockClient((request) async {
+        expect(request.url.path, endsWith('/auth/refresh'));
+        refreshCalls++;
+        return jsonUtf8Response({
+          'accessToken': newAccess,
+          'refreshToken': 'refresh-new',
+        }, 200);
+      });
+      final auth = await _loggedInTrackingAuth(client: client);
       final inner = _FakeFavoritesRepository();
       final repo = _UnauthThenSucceedRepository(inner);
       final controller = FavoritesController(auth, repo);
@@ -213,9 +252,37 @@ void main() {
       final ok = await controller.toggle(sample);
 
       expect(ok, isTrue);
+      expect(auth.forceRefreshCalls, 1);
+      expect(refreshCalls, 1);
       expect(repo.addAttempts, 2);
       expect(inner.addCalls, 1);
       expect(controller.isFavorite(550), isTrue);
+    });
+
+    test('second UNAUTHENTICATED after force-refresh clears session', () async {
+      var refreshCalls = 0;
+      final client = MockClient((request) async {
+        expect(request.url.path, endsWith('/auth/refresh'));
+        refreshCalls++;
+        return jsonUtf8Response({
+          'accessToken': _validAccessToken(),
+          'refreshToken': 'refresh-new',
+        }, 200);
+      });
+      final auth = await _loggedInTrackingAuth(client: client);
+      final repo = _FakeFavoritesRepository()
+        ..addError = FavoritesUnauthenticatedException();
+      final controller = FavoritesController(auth, repo);
+
+      await expectLater(
+        controller.toggle(sample),
+        throwsA(isA<FavoritesUnauthenticatedException>()),
+      );
+
+      expect(auth.forceRefreshCalls, 1);
+      expect(refreshCalls, 1);
+      expect(auth.isLoggedIn, isFalse);
+      expect(controller.isFavorite(550), isFalse);
     });
   });
 }

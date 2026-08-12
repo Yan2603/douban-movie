@@ -55,6 +55,13 @@ class AuthController extends ChangeNotifier {
       return access;
     }
 
+    return forceRefreshAccessToken();
+  }
+
+  /// Always calls `/auth/refresh` when a refresh token exists (ignores access exp).
+  /// Use after server UNAUTHENTICATED where the JWT may still look valid client-side.
+  /// Returns null and clears the session if refresh is missing or fails.
+  Future<String?> forceRefreshAccessToken() async {
     final refresh = _refreshToken;
     if (refresh == null || refresh.isEmpty) {
       await _clearSession();
@@ -65,6 +72,9 @@ class AuthController extends ChangeNotifier {
       _refreshInFlight = null;
     });
   }
+
+  /// Clears local tokens without calling logout on the server.
+  Future<void> clearSession() => _clearSession();
 
   Future<String?> _doRefresh(String refresh) async {
     try {

@@ -13,7 +13,11 @@ Future<void> main() async {
   await auth.restore();
 
   final favorites = FavoritesController(auth, FavoritesRepository());
-  await favorites.load();
+  try {
+    await favorites.load();
+  } on FavoritesUnauthenticatedException {
+    // Session cleared by force-refresh / retry; allow cold start as logged out.
+  }
 
   runApp(
     DoubanMovieApp(

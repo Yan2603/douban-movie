@@ -96,11 +96,16 @@ class FavoritesController extends ChangeNotifier {
     try {
       return await action(initialToken);
     } on FavoritesUnauthenticatedException {
-      final refreshed = await _auth.ensureFreshAccessToken();
+      final refreshed = await _auth.forceRefreshAccessToken();
       if (refreshed == null) {
         rethrow;
       }
-      return action(refreshed);
+      try {
+        return await action(refreshed);
+      } on FavoritesUnauthenticatedException {
+        await _auth.clearSession();
+        rethrow;
+      }
     }
   }
 }

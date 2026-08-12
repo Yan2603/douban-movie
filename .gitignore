@@ -21,6 +21,11 @@ migrate_working_dir/
 # Local secrets (TMDB / deploy)
 .env
 
+# Nest / Node
+node_modules/
+apps/server/dist/
+apps/server/coverage/
+
 # IntelliJ related
 *.iml
 *.ipr

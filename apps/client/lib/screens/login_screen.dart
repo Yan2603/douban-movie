@@ -13,7 +13,6 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _formKey = GlobalKey<FormState>();
 
   bool _isRegister = false;
   bool _loading = false;
@@ -72,70 +71,67 @@ class _LoginScreenState extends State<LoginScreen> {
         title: Text(_isRegister ? '注册' : '登录'),
       ),
       body: SafeArea(
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            padding: const EdgeInsets.all(24),
-            children: [
-              TextField(
-                controller: _usernameController,
-                enabled: !_loading,
-                autofillHints: const [AutofillHints.username],
-                textInputAction: TextInputAction.next,
-                decoration: const InputDecoration(
-                  labelText: '用户名',
-                  border: OutlineInputBorder(),
-                ),
+        child: ListView(
+          padding: const EdgeInsets.all(24),
+          children: [
+            TextField(
+              controller: _usernameController,
+              enabled: !_loading,
+              autofillHints: const [AutofillHints.username],
+              textInputAction: TextInputAction.next,
+              decoration: const InputDecoration(
+                labelText: '用户名',
+                border: OutlineInputBorder(),
               ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _passwordController,
-                enabled: !_loading,
-                obscureText: true,
-                autofillHints: const [AutofillHints.password],
-                textInputAction: TextInputAction.done,
-                onSubmitted: (_) {
-                  if (!_loading) _submit();
-                },
-                decoration: const InputDecoration(
-                  labelText: '密码',
-                  border: OutlineInputBorder(),
-                ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _passwordController,
+              enabled: !_loading,
+              obscureText: true,
+              autofillHints: const [AutofillHints.password],
+              textInputAction: TextInputAction.done,
+              onSubmitted: (_) {
+                if (!_loading) _submit();
+              },
+              decoration: const InputDecoration(
+                labelText: '密码',
+                border: OutlineInputBorder(),
               ),
-              if (_error != null) ...[
-                const SizedBox(height: 12),
-                Text(
-                  _error!,
-                  style: TextStyle(color: Theme.of(context).colorScheme.error),
-                ),
-              ],
-              const SizedBox(height: 24),
-              FilledButton(
-                onPressed: _loading ? null : _submit,
-                child: _loading
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : Text(_isRegister ? '注册' : '登录'),
-              ),
-              const SizedBox(height: 8),
-              TextButton(
-                onPressed: _loading
-                    ? null
-                    : () {
-                        setState(() {
-                          _isRegister = !_isRegister;
-                          _error = null;
-                        });
-                      },
-                child: Text(
-                  _isRegister ? '已有账号？去登录' : '没有账号？去注册',
-                ),
+            ),
+            if (_error != null) ...[
+              const SizedBox(height: 12),
+              Text(
+                _error!,
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
               ),
             ],
-          ),
+            const SizedBox(height: 24),
+            FilledButton(
+              onPressed: _loading ? null : _submit,
+              child: _loading
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Text(_isRegister ? '注册' : '登录'),
+            ),
+            const SizedBox(height: 8),
+            TextButton(
+              onPressed: _loading
+                  ? null
+                  : () {
+                      setState(() {
+                        _isRegister = !_isRegister;
+                        _error = null;
+                      });
+                    },
+              child: Text(
+                _isRegister ? '已有账号？去登录' : '没有账号？去注册',
+              ),
+            ),
+          ],
         ),
       ),
     );

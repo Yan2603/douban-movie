@@ -113,6 +113,9 @@ class AuthRepository {
     if (response.statusCode == 401) {
       throw AuthException('登录已失效，请重新登录');
     }
+    if (response.statusCode == 400) {
+      throw AuthException('请求参数无效，请检查用户名和密码');
+    }
     throw AuthException('网络异常，请稍后重试');
   }
 }

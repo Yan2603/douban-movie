@@ -113,8 +113,8 @@ export class AuthService {
 
   private async issueTokens(user: User): Promise<AuthTokens> {
     const accessSecret = this.requireConfig('JWT_ACCESS_SECRET');
-    const accessTtl = this.requireConfig('JWT_ACCESS_TTL');
-    const refreshTtl = this.requireConfig('JWT_REFRESH_TTL');
+    const accessTtl = this.config.get<string>('JWT_ACCESS_TTL') || '15m';
+    const refreshTtl = this.config.get<string>('JWT_REFRESH_TTL') || '7d';
 
     const accessToken = await this.jwtService.signAsync(
       { sub: user.id },

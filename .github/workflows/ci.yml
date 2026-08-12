@@ -18,6 +18,20 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: douban
+          POSTGRES_PASSWORD: douban
+          POSTGRES_DB: douban_movie
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U douban -d douban_movie"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4
 
@@ -47,8 +61,13 @@ jobs:
 
       - name: Test server
         working-directory: apps/server
+        env:
+          DATABASE_URL: postgres://douban:douban@localhost:5432/douban_movie
+          JWT_ACCESS_SECRET: ci-test-secret
+          JWT_ACCESS_TTL: 15m
+          JWT_REFRESH_TTL: 7d
+          TMDB_API_KEY: dummy
         run: npm test
-        continue-on-error: true
 
   docker:
     name: Docker build

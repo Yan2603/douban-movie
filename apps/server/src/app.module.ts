@@ -1,7 +1,10 @@
+import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { GraphQLModule } from '@nestjs/graphql';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from './auth/auth.module';
+import { FavoritesModule } from './favorites/favorites.module';
 import { HealthModule } from './health/health.module';
 import { MoviesModule } from './movies/movies.module';
 
@@ -21,9 +24,17 @@ import { MoviesModule } from './movies/movies.module';
         synchronize: config.get('TYPEORM_SYNC', 'true') === 'true', // 开发 true；生产计划后续改 migration
       }),
     }),
+    GraphQLModule.forRoot<ApolloDriverConfig>({
+      driver: ApolloDriver,
+      autoSchemaFile: true,
+      // Global prefix does NOT apply to GraphQL (Nest/Apollo); set full path for POST /api/graphql
+      path: '/api/graphql',
+      context: ({ req }: { req: unknown }) => ({ req }),
+    }),
     HealthModule,
     AuthModule,
     MoviesModule,
+    FavoritesModule,
   ],
 })
 export class AppModule {}

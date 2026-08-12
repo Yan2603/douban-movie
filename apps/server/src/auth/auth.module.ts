@@ -5,6 +5,7 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { RefreshToken } from './entities/refresh-token.entity';
 import { User } from './entities/user.entity';
+import { GqlJwtAuthGuard } from './guards/gql-jwt-auth.guard';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
 @Module({
@@ -13,7 +14,7 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
     JwtModule.register({}),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtAuthGuard],
-  exports: [AuthService, JwtAuthGuard, JwtModule],
+  providers: [AuthService, JwtAuthGuard, GqlJwtAuthGuard],
+  exports: [AuthService, JwtAuthGuard, GqlJwtAuthGuard, JwtModule],
 })
 export class AuthModule {}

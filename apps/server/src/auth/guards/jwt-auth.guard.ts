@@ -17,8 +17,12 @@ export class JwtAuthGuard implements CanActivate {
     private readonly config: ConfigService,
   ) {}
 
+  getRequest(context: ExecutionContext): Request {
+    return context.switchToHttp().getRequest<Request>();
+  }
+
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const request = context.switchToHttp().getRequest<Request>();
+    const request = this.getRequest(context);
     const token = extractBearer(request.headers.authorization);
     if (!token) {
       throw new UnauthorizedException();

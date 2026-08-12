@@ -102,42 +102,99 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
     final overviewText =
         (overview == null || overview.isEmpty) ? '暂无简介' : overview;
     final posterUrl = detail.toMovie().posterUrl;
+    final release = detail.releaseDate?.trim();
+    final year = (release != null &&
+            release.length >= 4 &&
+            int.tryParse(release.substring(0, 4)) != null)
+        ? release.substring(0, 4)
+        : null;
+    final titleText =
+        year == null ? detail.title : '${detail.title} ($year)';
+    final textTheme = Theme.of(context).textTheme;
+    const labelColor = Color(0xFF666666);
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          AspectRatio(
-            aspectRatio: 2 / 3,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: _DetailPoster(url: posterUrl),
-            ),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 960),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                titleText,
+                style: textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(
+                    width: 135,
+                    child: AspectRatio(
+                      aspectRatio: 2 / 3,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: _DetailPoster(url: posterUrl),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text.rich(
+                          TextSpan(
+                            style: textTheme.bodyMedium?.copyWith(
+                              height: 1.7,
+                              color: labelColor,
+                            ),
+                            children: [
+                              const TextSpan(text: '评分: '),
+                              TextSpan(
+                                text: detail.voteAverage.toStringAsFixed(1),
+                                style: textTheme.titleMedium?.copyWith(
+                                  color: const Color(0xFF494949),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (release != null && release.isNotEmpty)
+                          Text(
+                            '上映日期: $release',
+                            style: textTheme.bodyMedium?.copyWith(
+                              height: 1.7,
+                              color: labelColor,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 28),
+              Text(
+                '剧情简介',
+                style: textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                overviewText,
+                style: textTheme.bodyLarge?.copyWith(
+                  height: 1.7,
+                  color: const Color(0xFF494949),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 16),
-          Text(
-            detail.title,
-            style: Theme.of(context).textTheme.headlineSmall,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '评分 ${detail.voteAverage.toStringAsFixed(1)}',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          if (detail.releaseDate != null && detail.releaseDate!.isNotEmpty) ...[
-            const SizedBox(height: 4),
-            Text(
-              '上映 ${detail.releaseDate}',
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-          ],
-          const SizedBox(height: 16),
-          Text(
-            overviewText,
-            style: Theme.of(context).textTheme.bodyLarge,
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -159,6 +216,8 @@ class _DetailPoster extends StatelessWidget {
 
     return CachedNetworkImage(
       imageUrl: url!,
+      width: double.infinity,
+      height: double.infinity,
       fit: BoxFit.cover,
       errorWidget: (context, url, error) => const ColoredBox(
         color: Color(0xFFE0E0E0),

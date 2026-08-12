@@ -1,29 +1,27 @@
 # douban_movie
 
-豆瓣风格电影客户端（Flutter）。数据来自 [TMDB](https://www.themoviedb.org/) API。
+豆瓣风格电影客户端（Flutter）+ Nest 自建 API。影片数据经 Nest 代理 [TMDB](https://www.themoviedb.org/)，客户端不再携带 TMDB 密钥。
 
 ## 环境要求
 
-- Flutter SDK（与 pubspec.yaml 中 sdk 约束一致）
-- 有效的 TMDB API Key（在 TMDB 账户设置中申请）
+- Flutter SDK（与 `apps/client/pubspec.yaml` 中 sdk 约束一致）
+- 本地开发：Nest API（默认 `http://localhost:3000/api`）与 Postgres；服务端需配置 `TMDB_API_KEY`
 
-## TMDB API Key
+## API 基址
 
-本应用通过编译期常量传入 API Key，**请勿将密钥提交到 Git**。
-
-在 [TMDB](https://www.themoviedb.org/settings/api) 获取 API Key 后，在 `apps/client` 下使用 --dart-define 运行或构建：
+Flutter 通过编译期常量 `API_BASE_URL` 访问自建 API（默认开发值：`http://localhost:3000/api`）。生产 Web 构建默认为 `/movie-api/api`。
 
 ```bash
 cd apps/client
-flutter run --dart-define=TMDB_API_KEY=你的密钥
+flutter run --dart-define=API_BASE_URL=http://localhost:3000/api
 ```
 
 其他示例：
 
 ```bash
 cd apps/client
-flutter test --dart-define=TMDB_API_KEY=你的密钥
-flutter build apk --dart-define=TMDB_API_KEY=你的密钥
+flutter test --dart-define=API_BASE_URL=http://127.0.0.1:9/api
+flutter build apk --dart-define=API_BASE_URL=http://localhost:3000/api
 ```
 
 ## 开发
@@ -33,7 +31,7 @@ Flutter 客户端位于 `apps/client/`：
 ```bash
 cd apps/client
 flutter pub get
-flutter run --dart-define=TMDB_API_KEY=你的密钥
+flutter run --dart-define=API_BASE_URL=http://localhost:3000/api
 ```
 
 ## 文档
@@ -45,7 +43,8 @@ flutter run --dart-define=TMDB_API_KEY=你的密钥
 ### 架构
 
 - `edge-nginx`（容器）占用宿主 `:80`
-- `/movie/` → `douban-web`
+- `/movie/` → `douban-web`（静态）
+- `/movie-api/` → Nest API
 - `/`、`/api/`、`/uploads/` → `interview-nginx`
 
 ### 服务器一次性步骤
@@ -62,7 +61,8 @@ docker network create edge-net || true
 git clone <repo-url> /opt/douban-movie   # DEPLOY_PATH 自定
 cd /opt/douban-movie
 cp .env.example .env
-# 编辑 .env 填入真实 TMDB_API_KEY
+# 编辑 .env：填入真实 TMDB_API_KEY（仅服务端）、JWT_ACCESS_SECRET 等
+# API_BASE_URL 默认 /movie-api/api（客户端 Web 构建用）
 
 # 4) 启动 douban（不占 80）
 docker compose up -d --build
@@ -76,7 +76,7 @@ curl -sI http://127.0.0.1/movie/ | head -n 1
 
 配置 GitHub Secrets：`DEPLOY_HOST`、`DEPLOY_USER`、`DEPLOY_SSH_KEY`、`DEPLOY_PORT`、`DEPLOY_PATH`；  
 Repository variable `DEPLOY_ENABLED=true`。  
-push 到 `main`/`master` 后会在服务器 `git reset --hard` + `docker compose up -d --build`。
+push 到 `main`/`master` 后会在服务器 `git reset --hard` + `docker compose pull/up`。
 
 ### 回滚
 

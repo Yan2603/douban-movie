@@ -33,7 +33,7 @@ jobs:
 
       - name: Test
         working-directory: apps/client
-        run: flutter test --dart-define=TMDB_API_KEY=dummy_ci_key
+        run: flutter test --dart-define=API_BASE_URL=http://127.0.0.1:9/api
 
   docker:
     name: Docker build
@@ -65,7 +65,7 @@ jobs:
             ghcr.io/${{ steps.image.outputs.name }}:latest
             ghcr.io/${{ steps.image.outputs.name }}:${{ github.sha }}
           build-args: |
-            TMDB_API_KEY=${{ github.event_name == 'pull_request' && 'dummy_ci_key' || secrets.TMDB_API_KEY }}
+            API_BASE_URL=/movie-api/api
 
   deploy:
     name: Deploy to server

@@ -1,4 +1,4 @@
-import 'package:douban_movie/config/tmdb_config.dart';
+import 'package:douban_movie/config/api_config.dart';
 
 class Movie {
   final int id;
@@ -15,7 +15,7 @@ class Movie {
     this.releaseDate,
   });
 
-  String? get posterUrl => TmdbConfig.posterUrl(posterPath);
+  String? get posterUrl => ApiConfig.posterUrl(posterPath);
 
   factory Movie.fromJson(Map<String, dynamic> json) {
     return Movie(

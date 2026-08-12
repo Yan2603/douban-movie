@@ -2,8 +2,7 @@
 FROM ghcr.io/adrianjagielak/flutter:3.44.9 AS builder
 WORKDIR /app
 
-ARG TMDB_API_KEY
-RUN test -n "$TMDB_API_KEY" || (echo "TMDB_API_KEY build-arg is required" && exit 1)
+ARG API_BASE_URL=/movie-api/api
 
 COPY apps/client/pubspec.yaml apps/client/pubspec.lock ./
 COPY apps/client/ ./
@@ -12,7 +11,7 @@ RUN flutter config --enable-web \
  && flutter pub get \
  && flutter build web --release \
       --base-href=/movie/ \
-      --dart-define=TMDB_API_KEY=${TMDB_API_KEY}
+      --dart-define=API_BASE_URL=${API_BASE_URL}
 
 # daocloud mirror (same as interview) — avoid Docker Hub on CN servers
 FROM docker.m.daocloud.io/library/nginx:alpine

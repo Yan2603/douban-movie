@@ -31,14 +31,39 @@ jobs:
         working-directory: apps/client
         run: flutter pub get
 
-      - name: Test
+      - name: Test client
         working-directory: apps/client
         run: flutter test --dart-define=API_BASE_URL=http://127.0.0.1:9/api
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: apps/server/package-lock.json
+
+      - name: Install server deps
+        working-directory: apps/server
+        run: npm ci
+
+      - name: Test server
+        working-directory: apps/server
+        run: npm test
+        continue-on-error: true
 
   docker:
     name: Docker build
     needs: test
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - name: web
+            file: Dockerfile
+            build_args: |
+              API_BASE_URL=/movie-api/api
+          - name: api
+            file: Dockerfile.app
+            build_args: ''
     steps:
       - uses: actions/checkout@v4
 
@@ -60,12 +85,12 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
+          file: ${{ matrix.file }}
           push: ${{ github.event_name != 'pull_request' }}
           tags: |
-            ghcr.io/${{ steps.image.outputs.name }}:latest
-            ghcr.io/${{ steps.image.outputs.name }}:${{ github.sha }}
-          build-args: |
-            API_BASE_URL=/movie-api/api
+            ghcr.io/${{ steps.image.outputs.name }}/${{ matrix.name }}:latest
+            ghcr.io/${{ steps.image.outputs.name }}/${{ matrix.name }}:${{ github.sha }}
+          build-args: ${{ matrix.build_args }}
 
   deploy:
     name: Deploy to server
@@ -103,6 +128,7 @@ jobs:
               echo "$GHCR_TOKEN" | docker login ghcr.io -u "${GHCR_IMAGE%%/*}" --password-stdin
             fi
             export GHCR_IMAGE IMAGE_TAG
-            docker compose pull web
+            docker network create edge-net || true
+            docker compose pull
             docker compose up -d
             docker image prune -f

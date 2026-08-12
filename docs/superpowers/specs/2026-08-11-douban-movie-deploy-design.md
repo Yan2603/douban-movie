@@ -28,6 +28,7 @@
 ```
 浏览器  →  edge Nginx :80（宿主唯一 80）
               ├─ /movie/              → douban-web:80
+              ├─ /movie-api/          → douban-api:3000（Nest；见 auth-favorites 设计）
               ├─ /api/、/uploads/、/  → interview-nginx:80
 ```
 

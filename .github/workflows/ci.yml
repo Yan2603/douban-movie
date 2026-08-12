@@ -28,9 +28,11 @@ jobs:
           cache: true
 
       - name: Pub get
+        working-directory: apps/client
         run: flutter pub get
 
       - name: Test
+        working-directory: apps/client
         run: flutter test --dart-define=TMDB_API_KEY=dummy_ci_key
 
   docker:

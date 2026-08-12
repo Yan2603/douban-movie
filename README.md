@@ -11,22 +11,27 @@
 
 本应用通过编译期常量传入 API Key，**请勿将密钥提交到 Git**。
 
-在 [TMDB](https://www.themoviedb.org/settings/api) 获取 API Key 后，使用 --dart-define 运行或构建：
+在 [TMDB](https://www.themoviedb.org/settings/api) 获取 API Key 后，在 `apps/client` 下使用 --dart-define 运行或构建：
 
 ```bash
+cd apps/client
 flutter run --dart-define=TMDB_API_KEY=你的密钥
 ```
 
 其他示例：
 
 ```bash
+cd apps/client
 flutter test --dart-define=TMDB_API_KEY=你的密钥
 flutter build apk --dart-define=TMDB_API_KEY=你的密钥
 ```
 
 ## 开发
 
+Flutter 客户端位于 `apps/client/`：
+
 ```bash
+cd apps/client
 flutter pub get
 flutter run --dart-define=TMDB_API_KEY=你的密钥
 ```

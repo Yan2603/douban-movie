@@ -5,8 +5,8 @@ WORKDIR /app
 ARG TMDB_API_KEY
 RUN test -n "$TMDB_API_KEY" || (echo "TMDB_API_KEY build-arg is required" && exit 1)
 
-COPY pubspec.yaml pubspec.lock ./
-COPY . .
+COPY apps/client/pubspec.yaml apps/client/pubspec.lock ./
+COPY apps/client/ ./
 
 RUN flutter config --enable-web \
  && flutter pub get \

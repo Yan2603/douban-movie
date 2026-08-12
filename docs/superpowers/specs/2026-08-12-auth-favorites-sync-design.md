@@ -1,7 +1,7 @@
 # 登录、云收藏同步与 TMDB 后端代理 — 设计说明
 
 日期：2026-08-12  
-状态：已确认，待写实现计划  
+状态：已确认，实现计划见 `docs/superpowers/plans/2026-08-12-auth-favorites-sync.md`  
 工程路径：`C:\Users\28939\douban-movie`
 
 ## 目标

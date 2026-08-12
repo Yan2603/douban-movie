@@ -2,8 +2,8 @@ import 'package:douban_movie/app.dart';
 import 'package:douban_movie/auth/auth_controller.dart';
 import 'package:douban_movie/auth/auth_repository.dart';
 import 'package:douban_movie/auth/auth_store.dart';
+import 'package:douban_movie/repositories/favorites_repository.dart';
 import 'package:douban_movie/state/favorites_controller.dart';
-import 'package:douban_movie/storage/favorites_store.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
@@ -17,7 +17,12 @@ void main() {
       AuthStore(),
     );
     await auth.restore();
-    final favorites = FavoritesController(FavoritesStore());
+    final favorites = FavoritesController(
+      auth,
+      FavoritesRepository(
+        client: MockClient((_) async => http.Response('{}', 500)),
+      ),
+    );
     await favorites.load();
 
     await tester.pumpWidget(

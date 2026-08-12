@@ -13,21 +13,34 @@ class FavoritesScreen extends StatelessWidget {
     final movies = favorites.items;
 
     if (movies.isEmpty) {
-      return const Center(child: Text('还没有收藏'));
+      return RefreshIndicator(
+        onRefresh: () => favorites.load(),
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          children: const [
+            SizedBox(height: 120),
+            Center(child: Text('还没有收藏')),
+          ],
+        ),
+      );
     }
 
-    return MoviePosterGrid(
-      movies: movies,
-      onTap: (movie) {
-        Navigator.of(context).push(
-          MaterialPageRoute<void>(
-            builder: (_) => MovieDetailScreen(
-              movieId: movie.id,
-              summary: movie,
+    return RefreshIndicator(
+      onRefresh: () => favorites.load(),
+      child: MoviePosterGrid(
+        movies: movies,
+        physics: const AlwaysScrollableScrollPhysics(),
+        onTap: (movie) {
+          Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => MovieDetailScreen(
+                movieId: movie.id,
+                summary: movie,
+              ),
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 }
